@@ -1,33 +1,42 @@
 # run_validation.py
 import os
-import great_expectations as gx
+from pathlib import Path
 import pandas as pd
-from pathlib import Path
-from datetime import datetime
+import great_expectations as gx
+from great_expectations.core.batch import BatchRequest
 
-from pathlib import Path
+parent_dir = Path(__file__).resolve().parents[2]  
 
-
-def run_validation(expectations_path, data_path):
+def run_validation(expectations_path, **kwargs):
     context = gx.get_context(mode="file", project_root_dir=expectations_path)
+    expectation_suite = context.suites.get(name="weather_data_expectations")
 
-    # Load existing suite
-    expectation_suite = context.suites.get(name = "weather_data_expectations")
+    try:
+        ti = kwargs['ti']
+        filename = ti.xcom_pull(task_ids='DataFetching', key='weather_filename')
+        if not filename:
+            raise ValueError("XCom did not return a valid filename.")
+        data_path = parent_dir / 'data' / filename
+    except KeyError:
+        raise ValueError("No filename found in XCom. Ensure the data fetching task is executed before this task.")
 
-    batch_definition = (
-    context.data_sources.get("weather_data_source")
-    .get_asset("weather_dataframe_asset")
-    .get_batch_definition("batch definition")
-)
+    df = pd.read_csv(data_path, parse_dates=["date"])
 
-    # Run validation
-    df = pd.read_csv(data_path ,parse_dates=["date"])
+    batch_request = BatchRequest(
+        datasource_name="weather_data_source",
+        data_connector_name="default_runtime_data_connector_name",
+        data_asset_name="weather_dataframe_asset",
+        runtime_parameters={"batch_data": df},
+        batch_identifiers={"default_identifier_name": "default"},
+    )
 
-    batch = batch_definition.get_batch(batch_parameters={"dataframe": df})
-    print("Batch loaded successfully.")
+    validator = context.get_validator(
+        batch_request=batch_request,
+        expectation_suite=expectation_suite,
+    )
 
-    results = batch.validate(expectation_suite)
-    
+    results = validator.validate()
+
     if results["success"]:
         print("All expectations passed.")
     else:
@@ -37,10 +46,3 @@ def run_validation(expectations_path, data_path):
                 print(f"Expectation failed: {result['expectation_config']['type']}")
                 print(f"Details: {result['result']}")
         raise ValueError("Some expectations failed.")
-
-if __name__ == "__main__":
-    # Example usage
-    expectations_path = "great_expectations"
-    data_path = 'D:/Personnal_projects/Automated_Localised_Precipitation_Forecasting_Brazzaville/data/brazzaville_weather_data_2023-01-01-2023-01-31.csv'
-    run_validation(expectations_path=expectations_path, data_path=data_path)
-    print("Validation passed!")

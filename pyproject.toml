@@ -12,7 +12,14 @@ dependencies = [
     "python-dotenv (>=1.1.1,<2.0.0)",
     "requests-cache (>=1.2.1,<2.0.0)",
     "retry-requests (>=2.0.0,<3.0.0)",
-    "great-expectations (>=1.5.7,<2.0.0)"
+    "great-expectations (>=1.5.7,<2.0.0)",
+    "pendulum (>=3.1.0,<4.0.0)",
+    "python-dateutil (>=2.9.0.post0,<3.0.0)",
+    "evidently (>=0.7.11,<0.8.0)",
+    "mlflow (>=3.2.0,<4.0.0)",
+    "darts (>=0.36.0,<0.37.0)",
+    "catboost (>=1.2.8,<2.0.0)",
+    "streamlit (>=1.48.0,<2.0.0)"
 ]
 
 

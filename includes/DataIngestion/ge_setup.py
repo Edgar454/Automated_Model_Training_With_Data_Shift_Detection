@@ -1,4 +1,5 @@
 import os
+
 import great_expectations as gx
 from great_expectations import expectations as gxe
 import pandas as pd
@@ -13,17 +14,26 @@ from great_expectations.expectations.expectation_configuration import (
 from great_expectations.expectations.expectation import register_expectation
 register_expectation(ExpectRainToBeZeroWhenPrecipitationHoursIsZero)
 
+parent_dir = Path(__file__).resolve().parents[2]
 
-
-def setup_expectations(data_path, expectations_path):
+def setup_expectations(expectations_path ,**kwargs):
     """
     Setup the Great Expectations expectations for the weather data.
     Args:
         data_path (str): Path to the weather data CSV file.
         expectations_path (str): Path to store the Great Expectations configuration.
     """
+    # Get the file path from the kwargs
+    try:
+        ti = kwargs['ti']
+        filename = ti.xcom_pull(task_ids='DataFetching', key='weather_filename')
+        data_path = parent_dir / 'data' / filename
+    except KeyError:
+        raise ValueError("No filename found in XCom. Ensure the data fetching task is executed before this task.")
+
+    # Read the data
     df = pd.read_csv(data_path)
-    context = gx.get_context(mode="file", project_root_dir= expectations_path)
+    context = gx.get_context(mode="file", project_root_dir=expectations_path)
 
     datasource = context.data_sources.add_pandas(name="weather_data_source")
 
@@ -257,9 +267,3 @@ def setup_expectations(data_path, expectations_path):
     #)
 
 
-if __name__ == "__main__":
-    # Example usage
-    expectations_path = "great_expectations"
-    data_path = 'D:/Personnal_projects/Automated_Localised_Precipitation_Forecasting_Brazzaville/data/brazzaville_weather_data_2023-01-01-2023-01-31.csv'
-    setup_expectations(data_path=data_path, expectations_path=expectations_path)
-    print("Expectation suite created successfully!")

@@ -1,15 +1,15 @@
 import os
 import openmeteo_requests
-from dotenv import load_dotenv
 import argparse
 
 import pandas as pd
 import requests_cache
 from retry_requests import retry
+from pathlib import Path
 
 # Load environment variables from .env file
-load_dotenv()  
-DATA_PATH = os.getenv("DATA_PATH", "./")  # Default to current directory if DATA_PATH is not set
+parent_dir = Path(__file__).resolve().parents[2]  
+DATA_PATH = parent_dir / 'data'
 
 # Argument parser to get start and end dates from command line
 parser = argparse.ArgumentParser(description="Script to scrape weather data for Brazzaville, Congo.")
@@ -33,7 +33,7 @@ openmeteo = openmeteo_requests.Client(session = retry_session)
 url = "https://archive-api.open-meteo.com/v1/archive"
 
 
-def get_weather_data(start_date , end_date):
+def get_weather_data(start_date , end_date , **kwargs):
     """
     Helper function to get weather data for Brazzaville from Open-Meteo API."""
 
@@ -95,7 +95,13 @@ def get_weather_data(start_date , end_date):
         # Create a DataFrame and save it to CSV
         daily_dataframe = pd.DataFrame(data = daily_data)
         daily_dataframe.set_index("date", inplace = True)
-        daily_dataframe.to_csv(os.path.join(DATA_PATH, f"brazzaville_weather_data_{start_date}-{end_date}.csv"))
+
+        filename = f"brazzaville_weather_data_{start_date}-{end_date}.csv"
+        daily_dataframe.to_csv(os.path.join(DATA_PATH, filename))
+
+        if 'ti' in kwargs:
+            ti = kwargs['ti']
+            ti.xcom_push(key='weather_filename', value=filename)
 
     except Exception as e:
         print(f"Error fetching weather data: {e}")
