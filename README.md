@@ -36,10 +36,10 @@ The system integrates several technologies to ensure continuous, reliable, and e
 
 | Component                | Status         |
 |--------------------------|----------------|
-| Data ingestion pipeline  | 🏗️ In progress  |
-| Model training pipeline  | ⏳ Coming soon  |
-| Drift detection pipeline | ⏳ Coming soon  |
-| Streamlit UI             | ⏳ Coming soon  |
+| Data ingestion pipeline  |  ✅ Completed  |
+| Model training pipeline  | ✅ Completed  |
+| Drift detection pipeline | 🏗️ In progress  |
+| Streamlit UI             | 🏗️ In progress  |
 | DVC integration          | ✅ Completed    |
 | Containerization         | ⏳ Coming soon  |
 | CI with GitHub Actions   | ⏳ Coming soon  |

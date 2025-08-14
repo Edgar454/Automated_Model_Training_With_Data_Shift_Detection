@@ -11,12 +11,6 @@ from pathlib import Path
 parent_dir = Path(__file__).resolve().parents[2]  
 DATA_PATH = parent_dir / 'data'
 
-# Argument parser to get start and end dates from command line
-parser = argparse.ArgumentParser(description="Script to scrape weather data for Brazzaville, Congo.")
-parser.add_argument("--start_date", type=str, required=True, help="Start date for weather data in YYYY-MM-DD format.")
-parser.add_argument("--end_date", type=str, required=True, help="End date for weather data in YYYY-MM-DD format.")
-args = parser.parse_args()
-
 # Coordinates for Brazzaville, Congo
 Brazzaville_coordinates = {
     "latitude": -4.2661,
@@ -33,7 +27,7 @@ openmeteo = openmeteo_requests.Client(session = retry_session)
 url = "https://archive-api.open-meteo.com/v1/archive"
 
 
-def get_weather_data(start_date , end_date , **kwargs):
+def get_weather_data(start_date , end_date ,save_data= False, **kwargs):
     """
     Helper function to get weather data for Brazzaville from Open-Meteo API."""
 
@@ -42,7 +36,7 @@ def get_weather_data(start_date , end_date , **kwargs):
         "longitude": Brazzaville_coordinates["longitude"],
         "start_date": start_date,
         "end_date": end_date,
-        "daily": ["temperature_2m_max","temperature_2m_min","rain_sum",
+        "daily": ["temperature_2m_max","temperature_2m_min","temperature_2m_mean","rain_sum",
                 "relative_humidity_2m_max","relative_humidity_2m_min",
                 "wind_speed_10m_max","wind_speed_10m_min","wind_speed_10m_mean",
                 "relative_humidity_2m_min","cloudcover_mean","surface_pressure_mean","precipitation_hours"],
@@ -60,16 +54,17 @@ def get_weather_data(start_date , end_date , **kwargs):
         daily = response.Daily()
         daily_temperature_2m_max = daily.Variables(0).ValuesAsNumpy()
         daily_temperature_2m_min = daily.Variables(1).ValuesAsNumpy()
-        daily_rain_sum = daily.Variables(2).ValuesAsNumpy()
-        daily_relative_humidity_2m_max = daily.Variables(3).ValuesAsNumpy()
-        daily_relative_humidity_2m_min = daily.Variables(4).ValuesAsNumpy()
-        daily_wind_speed_10m_max = daily.Variables(5).ValuesAsNumpy()
-        daily_wind_speed_10m_min = daily.Variables(6).ValuesAsNumpy()
-        daily_wind_speed_10m_mean = daily.Variables(7).ValuesAsNumpy()
-        daily_relative_humidity_2m_mean = daily.Variables(8).ValuesAsNumpy()
-        daily_cloudcover_mean = daily.Variables(9).ValuesAsNumpy()
-        daily_surface_pressure_mean = daily.Variables(10).ValuesAsNumpy()
-        daily_precipitation_hours = daily.Variables(11).ValuesAsNumpy()
+        daily_temperature_2m_mean = daily.Variables(2).ValuesAsNumpy()
+        daily_rain_sum = daily.Variables(3).ValuesAsNumpy()
+        daily_relative_humidity_2m_max = daily.Variables(4).ValuesAsNumpy()
+        daily_relative_humidity_2m_min = daily.Variables(5).ValuesAsNumpy()
+        daily_wind_speed_10m_max = daily.Variables(6).ValuesAsNumpy()
+        daily_wind_speed_10m_min = daily.Variables(7).ValuesAsNumpy()
+        daily_wind_speed_10m_mean = daily.Variables(8).ValuesAsNumpy()
+        daily_relative_humidity_2m_mean = daily.Variables(9).ValuesAsNumpy()
+        daily_cloudcover_mean = daily.Variables(10).ValuesAsNumpy()
+        daily_surface_pressure_mean = daily.Variables(11).ValuesAsNumpy()
+        daily_precipitation_hours = daily.Variables(12).ValuesAsNumpy()
 
         # Create a DataFrame with the daily data
         daily_data = {"date": pd.date_range(
@@ -81,6 +76,7 @@ def get_weather_data(start_date , end_date , **kwargs):
 
         daily_data["temperature_2m_max (°C)"] = daily_temperature_2m_max
         daily_data["temperature_2m_min (°C)"] = daily_temperature_2m_min
+        daily_data["temperature_2m_mean (°C)"] = daily_temperature_2m_mean
         daily_data["rain_sum (mm)"] = daily_rain_sum
         daily_data["relative_humidity_2m_max (%)"] = daily_relative_humidity_2m_max
         daily_data["relative_humidity_2m_min (%)"] = daily_relative_humidity_2m_min
@@ -96,18 +92,27 @@ def get_weather_data(start_date , end_date , **kwargs):
         daily_dataframe = pd.DataFrame(data = daily_data)
         daily_dataframe.set_index("date", inplace = True)
 
-        filename = f"brazzaville_weather_data_{start_date}-{end_date}.csv"
-        daily_dataframe.to_csv(os.path.join(DATA_PATH, filename))
+        if save_data:
+            filename = "weather_data.csv"
+            daily_dataframe.to_csv(os.path.join(DATA_PATH, filename))
 
         if 'ti' in kwargs:
             ti = kwargs['ti']
             ti.xcom_push(key='weather_filename', value=filename)
+            
+        return daily_dataframe
 
     except Exception as e:
         print(f"Error fetching weather data: {e}")
         return None
     
 if __name__ == "__main__":
+    # Argument parser to get start and end dates from command line
+    parser = argparse.ArgumentParser(description="Script to scrape weather data for Brazzaville, Congo.")
+    parser.add_argument("--start_date", type=str, required=True, help="Start date for weather data in YYYY-MM-DD format.")
+    parser.add_argument("--end_date", type=str, required=True, help="End date for weather data in YYYY-MM-DD format.")
+    args = parser.parse_args()
+
     start_date = args.start_date
     end_date = args.end_date
-    get_weather_data(start_date,end_date)
+    get_weather_data(start_date,end_date, save_data=True)

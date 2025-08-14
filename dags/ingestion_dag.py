@@ -4,6 +4,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from airflow.sdk import DAG
 from airflow.operators.python import PythonOperator , BranchPythonOperator
+from airflow.operators.common import BashOperator
 from airflow.operators.empty import EmptyOperator
 
 from includes.DataIngestion.scrape_data import get_weather_data
@@ -50,7 +51,8 @@ with DAG("weather_data_ingestion_dag",
                         python_callable=get_weather_data,
                         op_kwargs={
                             "start_date": datetime.now() - relativedelta(years=2),
-                            "end_date": datetime.now()
+                            "end_date": datetime.now(),
+                            "save_data":True
                         },
                         provide_context=True
                     )

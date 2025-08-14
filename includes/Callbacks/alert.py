@@ -25,3 +25,4 @@ def task_failure_alert(context):
         channel="#issues",
         username="airflow-bot" )
     return  slack_alert.execute(context=context)
+

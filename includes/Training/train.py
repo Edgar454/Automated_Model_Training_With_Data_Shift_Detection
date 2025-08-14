@@ -4,19 +4,20 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from datetime import datetime
-from dotenv import load_dotenv
+from dotenv import set_key, load_dotenv
 
 from darts import TimeSeries
 from darts.models import CatBoostModel
 
 import mlflow
-from mlflow import log_params, log_artifacts
 load_dotenv()
 
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+EXPERIMENT_NAME = os.getenv("EXPERIMENT_NAME", "Weather_Forecast_Model_Training")
 
 # MLflow setup
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+mlflow.set_experiment(EXPERIMENT_NAME)
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -49,6 +50,7 @@ params = {
     "n_estimators": 500,
     "learning_rate": 0.04731969574429225,
     "max_depth": 8,
+    "output_chunk_length": 7,
     "random_state": 42,
 }
 
@@ -84,7 +86,7 @@ def train_and_log_model(weather_df: pd.DataFrame, params: dict):
     model = CatBoostModel(
         lags=params["lags"],
         lags_past_covariates=params["lags_past_covariates"],
-        output_chunk_length=1,
+        output_chunk_length= params["output_chunk_length"],
         n_estimators=params["n_estimators"],
         learning_rate=params["learning_rate"],
         max_depth=params["max_depth"],
@@ -94,6 +96,10 @@ def train_and_log_model(weather_df: pd.DataFrame, params: dict):
     )
     model.fit(rain_series, past_covariates=past_covariates)
     logger.info("✅ Model training completed successfully.")
+
+    # save the cutoff date
+    cut_off_date = weather_df.index[-1].strftime("%Y-%m-%d")
+    set_key(".env", "CUT_OFF_DATE", cut_off_date)
 
     # Save & log to MLflow
     model_path = parent_dir / "models" / "rain_forecasting_model"

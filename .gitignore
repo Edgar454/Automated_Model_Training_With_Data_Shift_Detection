@@ -16,3 +16,5 @@ __pycache__/
 great_expectations/
 mlartifacts/
 mlruns/
+.dvc/
+.vscode/
