@@ -1,0 +1,7 @@
+streamlit
+darts
+plotly
+pandas
+numpy
+mlflow
+python_dotenv

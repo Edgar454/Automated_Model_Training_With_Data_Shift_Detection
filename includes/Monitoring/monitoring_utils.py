@@ -3,14 +3,22 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 import pandas as pd
-from datetime import datetime
+from datetime import datetime , date
 from shared.model_utils import safe_predict_with_model
-from shared.data_utils import build_fourier
+from includes.DataIngestion.scrape_data import get_weather_data
+from shared.data_utils import build_fourier 
 
 
 def prepare_data(cutoff_date, data_path , start= 8):
+
     # Load the data
     data = pd.read_csv(os.path.join(data_path, "weather_data.csv"), index_col=0, parse_dates=True)
+    new_data = get_weather_data(start_date=data.index[-1].date(), end_date=date.today())
+
+    
+    # add the newly collected data and save the updated weather_data.csv
+    data = pd.concat([data ,new_data],axis=0)
+    data.to_csv(os.path.join(data_path, "weather_data.csv"))
 
     # Ensure the data is sorted and has no missing values
     data.index = data.index.tz_localize(None)

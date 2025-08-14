@@ -1,17 +1,34 @@
 import os
 import pandas as pd
 
-from evidently import Report, DataDefinition, Dataset, Regression
-from evidently.presets import DataDriftPreset, RegressionPreset 
+from evidently import Report, DataDefinition, Dataset, Regression 
+from evidently.presets import DataDriftPreset 
 from evidently.metrics import ValueDrift 
+from evidently.tests import lte 
+from evidently.metrics import RMSE, MAE
+from evidently.future.tests import Reference
 
+from evidently.ui.workspace import RemoteWorkspace,ProjectModel
 from monitoring_utils import prepare_data
 
-from dotenv import load_dotenv
+from dotenv import set_key ,load_dotenv
 load_dotenv()
 
+EVIDENTLY_SERVER_URL = os.getenv('EVIDENTLY_SERVER_URL',"http://127.0.0.1:8000")
+ENV_PATH = os.getenv('ENV_PATH')
+PROJECT_ID = os.getenv('PROJECT_ID')
 
-def monitor_drift():
+remote_ws = RemoteWorkspace(EVIDENTLY_SERVER_URL)
+
+try:
+    project = remote_ws.get_project(PROJECT_ID)
+except Exception :
+    project = remote_ws.add_project(ProjectModel(name="Rain Model Monitoring", description="Monitoring of rain model in prod to spot model decay"))
+    project.save()
+    set_key(ENV_PATH, "PROJECT_ID" ,str(project.id))
+
+
+def monitor_drift(**kwargs):
     """
     Function to monitor data drift and regression in the weather data.
     It prepares the data, runs regression tests, and generates a report.
@@ -52,20 +69,28 @@ def monitor_drift():
 
     # Define the regression tests
     regression_preset = Report(metrics=[
-        RegressionPreset(),
+        RMSE(tests=[lte(Reference(absolute=0.3))]),
+        MAE(mean_tests=[lte(Reference(absolute=0.3))]),
         ValueDrift(column="rain_sum (mm)"),
-        #DataDriftPreset(),
+        DataDriftPreset()
     ],
+    include_tests=True
     )
 
     # Run the regression tests
-    regression_report = regression_preset.run(reference_data=reference, current_data=current)
+    snapshot = regression_preset.run(reference_data=reference, current_data=current)
+    remote_ws.add_run(project.id, snapshot)
+    result = snapshot.dict()
+    
+    tests_results = result['tests']
+    mae_test_results= result['tests'][0]['status']
+    rmse_test_results = result['tests'][1]['status']
 
+    if 'ti' in kwargs:
+        ti = kwargs['ti']
+        ti.xcom_push(key='model_decay_test_result', value=str(rmse_test_results))
 
-    print("Regression Report:")
-    print(regression_report)
-
-    return regression_report
+    
 
 if __name__ == "__main__":
     monitor_drift()

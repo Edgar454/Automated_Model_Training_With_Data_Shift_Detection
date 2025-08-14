@@ -14,6 +14,7 @@ load_dotenv()
 
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 EXPERIMENT_NAME = os.getenv("EXPERIMENT_NAME", "Weather_Forecast_Model_Training")
+ENV_PATH = os.getenv('ENV_PATH')
 
 # MLflow setup
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
@@ -26,8 +27,7 @@ parent_dir = Path(__file__).resolve().parents[2]
 DATA_PATH = parent_dir / "data"
 csv_path = DATA_PATH / "weather_data.csv"
 
-# Load data
-weather_df = pd.read_csv(csv_path, index_col=0, parse_dates=True)
+
 
 # Params
 params = {
@@ -66,7 +66,11 @@ def fourier_features(index, freq, order):
 
 
 
-def train_and_log_model(weather_df: pd.DataFrame, params: dict):
+def train_and_log_model(csv_path: str = csv_path, params: dict = params):
+
+    # Load data
+    weather_df = pd.read_csv(csv_path, index_col=0, parse_dates=True)
+
     # Preprocess
     logger.info("⚙ Loading the weather data and preprocessing...")
     weather_df = weather_df.dropna()
@@ -99,7 +103,7 @@ def train_and_log_model(weather_df: pd.DataFrame, params: dict):
 
     # save the cutoff date
     cut_off_date = weather_df.index[-1].strftime("%Y-%m-%d")
-    set_key(".env", "CUT_OFF_DATE", cut_off_date)
+    set_key(ENV_PATH, "CUT_OFF_DATE", cut_off_date)
 
     # Save & log to MLflow
     model_path = parent_dir / "models" / "rain_forecasting_model"
@@ -115,4 +119,4 @@ def train_and_log_model(weather_df: pd.DataFrame, params: dict):
     return model
 
 if __name__ == "__main__":
-    _ = train_and_log_model(weather_df, params)
+    _ = train_and_log_model()

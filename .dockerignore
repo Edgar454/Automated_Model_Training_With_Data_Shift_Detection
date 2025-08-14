@@ -1,0 +1,6 @@
+.pyc
+.env
+.sqlite
+workspace/
+mlruns/
+__pycache__/

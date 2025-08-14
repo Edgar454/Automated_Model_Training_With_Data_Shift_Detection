@@ -38,13 +38,13 @@ The system integrates several technologies to ensure continuous, reliable, and e
 |--------------------------|----------------|
 | Data ingestion pipeline  |  ✅ Completed  |
 | Model training pipeline  | ✅ Completed  |
-| Drift detection pipeline | 🏗️ In progress  |
+| Drift detection pipeline | ✅ Completed    |
 | Streamlit UI             | 🏗️ In progress  |
 | DVC integration          | ✅ Completed    |
-| Containerization         | ⏳ Coming soon  |
+| Containerization         | ✅ Completed    |
 | CI with GitHub Actions   | ⏳ Coming soon  |
 | Deployment on Kubernetes | ⏳ Coming soon  |
-| Monitoring & logging     | ⏳ Coming soon  |
+| Monitoring & logging     | ✅ Completed   |
 
 ---
 

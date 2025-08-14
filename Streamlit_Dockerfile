@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /streamlit_app
+
+# Copy all necessary files/folders into container
+COPY data ./data
+COPY shared ./shared
+COPY frontend ./frontend
+
+# Install dependencies
+RUN pip install --no-cache-dir -r ./frontend/requirements.txt
+
+# Set working directory to frontend for running Streamlit
+WORKDIR /streamlit_app/frontend
+
+# Run Streamlit app
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

@@ -10,8 +10,6 @@ from chart_utils import plot_and_display_data_predictions , get_feature_evolutio
 import datetime
 from datetime import timedelta
 
-
-st.set_page_config(page_title="Weather Forecast", layout="centered", page_icon="🌦")
 st.title("🌦 Rain Forecasting App ")
 
 
